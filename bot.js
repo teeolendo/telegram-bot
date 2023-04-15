@@ -2,6 +2,7 @@ require('dotenv').config()
 const express = require('express')
 const bodyParser = require('body-parser')
 const TelegramBot = require('node-telegram-bot-api')
+const fs = require('fs')
 
 //paths
 const { TOKEN, SERVER_URL } = process.env
@@ -47,12 +48,30 @@ bot.on('chat_member', (msg) => {
 /**
  * Processes '/question' command
  */
-bot.onText(/\/question/, (msg) => {
+bot.onText(/\/question (.+)/, (msg, match) => {
   //Add logic to process questions sent. Checkout the msg object.
   // Return a response. Now just echoes user input.
-  const response = msg.text
 
-  bot.sendMessage(msg.chat.id, `Here's what I got: ${response}`)
+  const question = match[1]
+  const newPrompt = {
+    prompt: question,
+    completion: 'IDK where this data comes from',
+  }
+
+  addPrompt(newPrompt)
+
+  bot.sendMessage(msg.chat.id, `${question}`)
+})
+
+/**
+ * Processes '/answer' command
+ */
+bot.onText(/\/answer (.+)/, (msg, match) => {
+  //Add logic to process questions sent. Checkout the msg object.
+  // Return a response. Now just echoes user input.
+
+  const answer = match[1]
+  bot.sendMessage(msg.chat.id, `Here's what I got: ${answer}`)
 })
 
 /**
@@ -68,6 +87,22 @@ app.listen(process.env.PORT || 5000, async () => {
   console.log('🚀 app running on port', process.env.PORT || 5000)
   console.log(SET_WEBHOOK_PATH)
 })
+
+function addPrompt(newPrompt) {
+  // Convert the JSON object to a JSON string
+  const newJsonLine = JSON.stringify(newPrompt)
+
+  const jsonlFilePath = './data.jsonl'
+
+  // Read the existing JSONL file and append the new JSON string as a new line
+  fs.appendFile(jsonlFilePath, `\n${newJsonLine}`, (error) => {
+    if (error) {
+      console.error('An error occurred while appending to the file:', error)
+    } else {
+      console.log('JSON object appended to the JSONL file successfully')
+    }
+  })
+}
 
 /*** One on one response. Can be useful depending on commands we choose to add
 bot.on('message', (msg) => {
